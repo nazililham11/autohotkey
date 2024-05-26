@@ -18,15 +18,15 @@ $Browser_Home::Send {F10}
 
 
 $F1::
-	Speak("locking desktop")
 	DllCall("LockWorkStation")
+	Speak("locking desktop")
 	return
 $F2::Send {F2}
 $F3::Send {Volume_Up}
 $F4::Send {Volume_Down}
 $F5::
-	Speak("opening sound mixer")
 	run SndVol.exe
+	Speak("opening sound mixer")
 	return
 $F6::Send {Media_Prev}
 $F7::Send {Media_Play_Pause}
@@ -39,8 +39,9 @@ $F10::AdjustScreenBrightness(5)
 NumpadDiv::Send ^#{Left}
 NumpadMult::
 	; works with 'winodows virtual desktop helper' app
-	Send !3
-	Speak("goto main dekstop")
+	; Send !3
+	; Speak("main dekstop")
+	Send #{Tab}
 	return
 NumpadSub::Send ^#{Right}
 
@@ -52,6 +53,11 @@ NumpadSub::Send ^#{Right}
 ^Numpad8::ToggleMaximize()
 ^Numpad9::WinClose A
 
+!`::WinMinimize A
+
+; Global Mouse Macro
+; $^XButton1::Send ^#{Right}
+; $^XButton2::Send ^#{Left}
 
 ; Double tab Right Shift to Open Context Menu (Right Click)
 ~RShift::
@@ -61,6 +67,22 @@ NumpadSub::Send ^#{Right}
 	}
 	Send {AppsKey}
 	return
+
+; MPC
+#IfWinActive ahk_exe mpc-hc64.exe
+	XButton1::
+		SendInput, {Right}
+		return
+	XButton2::
+		SendInput, {Left}
+		return
+
+
+#IfWinNotActive ahk_exe GenshinImpact.exe
+	XButton1 & WheelUp::Send ^#{Right}
+	XButton1 & WheelDown::Send ^#{Left}
+	XButton2 & WheelUp::Send !{Tab}
+	XButton2 & WheelDown::Send !+{Tab}
 
 ; One Comander
 #IfWinActive ahk_exe OneCommander.exe
@@ -79,6 +101,14 @@ NumpadSub::Send ^#{Right}
 		Send {Delete}
 		return
 
+; VSCode
+#IfWinActive ahk_exe Code.exe
+	
+	^`::
+		Send, ^k
+		Send, ^{Right}
+		return
+
 
 ; Explorer
 #IfWinActive ahk_class CabinetWClass
@@ -88,40 +118,54 @@ NumpadSub::Send ^#{Right}
 
 ; Honkai Star Rail
 #IfWinActive ahk_exe StarRail.exe
-	XButton1::
-		Send f
-		return
-	; repeat f button when XButton is down
-	~XButton2::
-		Sleep, 500 ;repeat delay
-		While GetKeyState("f", "P")
+	~XButton1::
+		While GetKeyState("XButton1", "P")
 		{
-			SendInput, {f Down}
-			Sleep, 100 ; repeat rate
+			Send {Space}
+			Send 1
+			Sleep, 25 ; repeat rate
 		}
 		return
+	~XButton2::
+		While GetKeyState("XButton2", "P")
+		{
+			Send f
+			Sleep, 150 ; repeat rate
+		}
+		return
+	~Space::
+		While GetKeyState("Space", "P")
+		{
+			Send {Space}
+			Sleep, 150 ; repeat rate
+		}
+		return
+	~E::
+		While GetKeyState("E", "P")
+		{
+			Send E
+			Sleep, 150 ; repeat rate
+		}
+		return
+	z::
+		MouseGetPos, xpos, ypos
+	    MouseClick, left, 1253, 145, 1, 0
+	    MouseMove, %xpos%, %ypos%, 0
+	    return
+	x::
+		MouseGetPos, xpos, ypos
+	    MouseClick, left, 1253, 173, 1, 0
+	    MouseMove, %xpos%, %ypos%, 0
+	    return
 
 ; Genshin Impact
 #IfWinActive ahk_exe GenshinImpact.exe
-	XButton1::
-		Send f
-		return
-	; repeat f button when XButton is down
+	XButton1::Send f
 	~XButton2::
-		Sleep, 500 ;repeat delay
-		While GetKeyState("f", "P")
+		While GetKeyState("XButton2", "P")
 		{
-			SendInput, {f Down}
-			Sleep, 100 ; repeat rate
-		}
-		return
-	MButton::
-		; coordMode, pixel
-		; Tested on 1366x768
-		ImageSearch, FoundX, FoundY, 1000, 700, A_ScreenWidth, A_ScreenHeight, *0 button_1.bmp
-		if (ErrorLevel = 0) {
-		    MouseClick, left,  FoundY+20, FoundY+20
-    		MsgBox The icon was found at %FoundX%x%FoundY%.
+			Send f
+			Sleep, 50 ; repeat rate
 		}
 		return
 
@@ -145,19 +189,6 @@ NumpadSub::Send ^#{Right}
 			Send ^+{Tab}
 		return
 
-; Sublime Text
-#IfWinActive ahk_exe sublime_text.exe
-	F1::
-		Send ^1
-		return
-	F2::
-		Send ^2
-		return
-	F3::
-		Send ^3
-		return 
-
-
 
 
 
@@ -166,8 +197,7 @@ NumpadSub::Send ^#{Right}
 
 ; Toggle Relay
 ToggleRelay(relayId) {
-	Speak("Toggle relay yeay")
-	relay_ps := "relay_toggler.ps1"
+	relay_ps := "./relay_toggler.ps1"
 	RunWait, powershell -noprofile -command %relay_ps% %relayId%,,HIDE
 	return
 }
@@ -239,7 +269,9 @@ HttpGet(URL) {
 	req.send()
 }
 Speak(speak) {
-	ComObjCreate("SAPI.SpVoice").Speak(speak)
+	oSPVoice := ComObjCreate("SAPI.SpVoice")
+	oSpVoice.Rate := 2
+	oSPVoice.Speak(speak)
 }
 LockDesktop() {
 	Speak("Locking desktop")
