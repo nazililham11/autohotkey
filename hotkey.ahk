@@ -1,8 +1,32 @@
 #SingleInstance force
 #NoEnv
 #MaxThreadsPerHotkey 1
+
 SetWorkingDir %A_ScriptDir%
 return
+
+; Hold Space to enter VIM Mode
+#if A_TickCount - Time > 250  	; 250 ms
+	j::Up
+	k::Down
+	h::Left
+	l::Right
+
+#if
+*Space::
+	If !Time
+		Time := A_TickCount
+
+	return
+
+*Space Up::
+	if ( A_TickCount - Time < 250 )  	; 250 ms
+	{
+		Send {Space}
+	}
+	Time := ""
+	return
+
 
 ; Function keys
 $Launch_Media::Send {F1}
@@ -17,17 +41,11 @@ $Launch_Mail::Send {F9}
 $Browser_Home::Send {F10}
 
 
-$F1::
-	DllCall("LockWorkStation")
-	Speak("locking desktop")
-	return
+$F1::LockDesktop()
 $F2::Send {F2}
 $F3::Send {Volume_Up}
 $F4::Send {Volume_Down}
-$F5::
-	run SndVol.exe
-	Speak("opening sound mixer")
-	return
+$F5::run SndVol.exe
 $F6::Send {Media_Prev}
 $F7::Send {Media_Play_Pause}
 $F8::Send {Media_Next}
@@ -37,12 +55,7 @@ $F10::AdjustScreenBrightness(5)
 
 ; Numpads
 NumpadDiv::Send ^#{Left}
-NumpadMult::
-	; works with 'winodows virtual desktop helper' app
-	; Send !3
-	; Speak("main dekstop")
-	Send #{Tab}
-	return
+NumpadMult::Send #{Tab}
 NumpadSub::Send ^#{Right}
 
 ^Numpad1::ToggleRelay("0")
@@ -53,11 +66,9 @@ NumpadSub::Send ^#{Right}
 ^Numpad8::ToggleMaximize()
 ^Numpad9::WinClose A
 
-!`::WinMinimize A
+Pause::LockDesktop()
 
-; Global Mouse Macro
-; $^XButton1::Send ^#{Right}
-; $^XButton2::Send ^#{Left}
+!`::WinMinimize A
 
 ; Double tab Right Shift to Open Context Menu (Right Click)
 ~RShift::
@@ -70,40 +81,17 @@ NumpadSub::Send ^#{Right}
 
 ; MPC
 #IfWinActive ahk_exe mpc-hc64.exe
-	XButton1::
-		SendInput, {Right}
-		return
-	XButton2::
-		SendInput, {Left}
-		return
-
+	XButton1::SendInput, {Right}
+	XButton2::SendInput, {Left}
 
 #IfWinNotActive ahk_exe GenshinImpact.exe
-	XButton1 & WheelUp::Send ^#{Right}
-	XButton1 & WheelDown::Send ^#{Left}
-	XButton2 & WheelUp::Send !{Tab}
-	XButton2 & WheelDown::Send !+{Tab}
-
-; One Comander
-#IfWinActive ahk_exe OneCommander.exe
-	
-	XButton1::
-		Send, {Shift down}
-		KeyWait, XButton1
-		Send, {Shift up}
-		return
-	XButton2::
-		Send, {Ctrl down}
-		KeyWait, XButton2
-		Send, {Ctrl up}
-		return
-	^D::
-		Send {Delete}
-		return
+	RButton::RButton
+	~RButton & XButton1::Send ^#{Left}
+	~RButton & XButton2::Send ^#{Right}
 
 ; VSCode
 #IfWinActive ahk_exe Code.exe
-	
+
 	^`::
 		Send, ^k
 		Send, ^{Right}
@@ -157,10 +145,21 @@ NumpadSub::Send ^#{Right}
 	    MouseClick, left, 1253, 173, 1, 0
 	    MouseMove, %xpos%, %ypos%, 0
 	    return
+	`::
+		MouseGetPos, xpos, ypos
+	    MouseClick, left, 1201, 53, 1, 0
+	    MouseMove, %xpos%, %ypos%, 0
+	    return
 
 ; Genshin Impact
 #IfWinActive ahk_exe GenshinImpact.exe
-	XButton1::Send f
+	~XButton1::
+		While GetKeyState("XButton1", "P")
+		{
+			Send {LButton}
+			Sleep, 150 ; repeat rate
+		}
+		return
 	~XButton2::
 		While GetKeyState("XButton2", "P")
 		{
@@ -220,7 +219,7 @@ NextWindow() {
 		WinGet, WindowsWithSameTitleList, List, ahk_class %WindowClass%
 
 		if (WindowsWithSameTitleList > 1) {
-			WinActivate, % "ahk_id " WindowsWithSameTitleList%WindowsWithSameTitleList%	
+			WinActivate, % "ahk_id " WindowsWithSameTitleList%WindowsWithSameTitleList%
 		}
 	}
 }
@@ -274,10 +273,18 @@ Speak(speak) {
 	oSPVoice.Speak(speak)
 }
 LockDesktop() {
-	Speak("Locking desktop")
 	DllCall("LockWorkStation")
 }
 OpenSoundMixer() {
-	Speak("Open sound mixer")
 	SndVol.exe
 }
+
+
+
+; Cheatsheet
+; https://www.autohotkey.com/docs/v1/Hotkeys.htm
+;
+; # Windows Key
+; ! Alt Key
+; ^ Ctrl Key
+; + Shift Key
