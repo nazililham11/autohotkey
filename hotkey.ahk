@@ -2,30 +2,59 @@
 #NoEnv
 #MaxThreadsPerHotkey 1
 
+SetCapsLockState, AlwaysOff
 SetWorkingDir %A_ScriptDir%
 return
 
+
+vim_mode := False
+
 ; Hold Space to enter VIM Mode
-#if A_TickCount - Time > 250  	; 250 ms
+#if vim_mode OR (A_TickCount - CapsLockTime > 50) OR (A_TickCount - SpaceTime > 50)
+	q::BackSpace
+	e::Delete
+	y::Send {Left 10}
+	u::Send {Up 10}
+	i::Send {Down 10}
+	o::Send {Right 10}
+	.::End
+	,::Home
 	j::Up
 	k::Down
 	h::Left
 	l::Right
 
+	Space::vim_mode := False
+	Esc::vim_mode := False
+
+
+
+
+
 #if
+
 *Space::
-	If !Time
-		Time := A_TickCount
-
+	if !SpaceTime
+		SpaceTime := A_TickCount
 	return
-
 *Space Up::
-	if ( A_TickCount - Time < 250 )  	; 250 ms
-	{
+	if (A_TickCount - SpaceTime < 250)  	; 250 ms
 		Send {Space}
-	}
-	Time := ""
+	SpaceTime := ""
 	return
+*CapsLock::
+	if !CapsLockTime
+		CapsLockTime := A_TickCount
+	return
+
+*CapsLock Up::
+	if (A_TickCount - CapsLockTime < 250)  	; 250 ms
+		vim_mode := !vim_mode
+	else
+		vim_mode := False
+	CapsLockTime := ""
+	return
+
 
 
 ; Function keys
@@ -68,7 +97,7 @@ NumpadSub::Send ^#{Right}
 
 Pause::LockDesktop()
 
-!`::WinMinimize A
+#`::WinMinimize A
 
 ; Double tab Right Shift to Open Context Menu (Right Click)
 ~RShift::
@@ -196,8 +225,8 @@ Pause::LockDesktop()
 
 ; Toggle Relay
 ToggleRelay(relayId) {
-	relay_ps := "./relay_toggler.ps1"
-	RunWait, powershell -noprofile -command %relay_ps% %relayId%,,HIDE
+	relay_ps := "./relay.py"
+	RunWait, python %relay_ps% %relayId%,,HIDE
 	return
 }
 ToggleMaximize() {
