@@ -2,102 +2,40 @@
 #NoEnv
 #MaxThreadsPerHotkey 1
 
-SetCapsLockState, AlwaysOff
-SetWorkingDir %A_ScriptDir%
+#Include hyperWindowSnap.ahk
+
+; SetCapsLockState, AlwaysOff
 return
 
 
-vim_mode := False
-
-; Hold Space to enter VIM Mode
-#if vim_mode OR (A_TickCount - CapsLockTime > 50) OR (A_TickCount - SpaceTime > 50)
-	q::BackSpace
-	e::Delete
-	y::Send {Left 10}
-	u::Send {Up 10}
-	i::Send {Down 10}
-	o::Send {Right 10}
-	.::End
-	,::Home
-	j::Up
-	k::Down
-	h::Left
-	l::Right
-
-	Space::vim_mode := False
-	Esc::vim_mode := False
-
-
-
-
-
-#if
-
-*Space::
-	if !SpaceTime
-		SpaceTime := A_TickCount
-	return
-*Space Up::
-	if (A_TickCount - SpaceTime < 250)  	; 250 ms
-		Send {Space}
-	SpaceTime := ""
-	return
-*CapsLock::
-	if !CapsLockTime
-		CapsLockTime := A_TickCount
-	return
-
-*CapsLock Up::
-	if (A_TickCount - CapsLockTime < 250)  	; 250 ms
-		vim_mode := !vim_mode
-	else
-		vim_mode := False
-	CapsLockTime := ""
-	return
-
-
-
-; Function keys
-$Launch_Media::Send {F1}
-$Volume_Down::Send {F2}
-$Volume_Up::Send {F3}
-$Volume_Mute::Send {F4}
-$Media_Stop::Send {F5}
-$Media_Prev::Send {F6}
-$Media_Play_Pause::Send {F7}
-$Media_Next::Send {F8}
-$Launch_Mail::Send {F9}
-$Browser_Home::Send {F10}
-
 
 $F1::LockDesktop()
-$F2::Send {F2}
-$F3::Send {Volume_Up}
-$F4::Send {Volume_Down}
-$F5::run SndVol.exe
-$F6::Send {Media_Prev}
-$F7::Send {Media_Play_Pause}
-$F8::Send {Media_Next}
 $F9::AdjustScreenBrightness(-5)
 $F10::AdjustScreenBrightness(5)
 
 
-; Numpads
-NumpadDiv::Send ^#{Left}
-NumpadMult::Send #{Tab}
-NumpadSub::Send ^#{Right}
+; Special mapping for my 65% keyboard layout
+NumpadHome::SendInput !1
+NumpadUp::SendInput !2
+NumpadPgup::SendInput !3
+NumpadLeft::SendInput !4
+NumpadClear::SendInput !5
+NumpadRight::SendInput !6
+NumpadEnd::Delete
+NumpadDown::Home
+NumpadPgdn::Pgup
+NumpadIns::End
+NumpadDel::PgDn
 
-^Numpad1::ToggleRelay("0")
-^Numpad2::ToggleRelay("1")
-^Numpad3::ToggleRelay("2")
++BackSpace::Delete
+#BackSpace::WinClose  A
 
-^Numpad7::WinMinimize A
-^Numpad8::ToggleMaximize()
-^Numpad9::WinClose A
+#NumpadIns:: 
+#Numpad0::ToggleWindowTitileBar()
+!#Space::OpenAlacrittyCommnand()
+#NumpadSub:: SendInput {PrintScreen}
 
-Pause::LockDesktop()
-
-#`::WinMinimize A
+#Escape:: WinMinimize a
 
 ; Double tab Right Shift to Open Context Menu (Right Click)
 ~RShift::
@@ -105,62 +43,78 @@ Pause::LockDesktop()
 	    KeyWait RShift
 	    return
 	}
-	Send {AppsKey}
+	SendInput {AppsKey}
 	return
+
+
+; When numlock are off, use Numpad + and - to switch between virtual desktops
+#If !GetKeyState("NumLock", "T")
+    NumpadAdd::SendInput ^#{Left}
+	NumpadSub::SendInput ^#{Right}
+
+
+; custom Vim like
+#If GetKeyState("CapsLock", "T") | GetKeyState("CapsLock", "P")
+	j::Left
+	k::Down
+	l::Right
+	i::Up
+
+	u::BackSpace
+	o::Delete
+	p::Home
+	`;::End
+	[::PgUp
+	'::PgDn
+
+	; 	j::Up
+	; 	k::Down
+	; 	h::Left
+	; 	l::Right
+
+#If
+
 
 ; MPC
 #IfWinActive ahk_exe mpc-hc64.exe
-	XButton1::SendInput, {Right}
-	XButton2::SendInput, {Left}
+	XButton1::Right
+	XButton2::Left
 
-#IfWinNotActive ahk_exe GenshinImpact.exe
-	RButton::RButton
-	~RButton & XButton1::Send ^#{Left}
-	~RButton & XButton2::Send ^#{Right}
 
 ; VSCode
 #IfWinActive ahk_exe Code.exe
 
 	^`::
-		Send, ^k
-		Send, ^{Right}
+		SendInput ^k
+		SendInput ^{Right}
 		return
 
 
 ; Explorer
 #IfWinActive ahk_class CabinetWClass
 	^b::
-		Send !vn{space}
+		SendInput !vn{space}
 		return
+
 
 ; Honkai Star Rail
 #IfWinActive ahk_exe StarRail.exe
 	~XButton1::
-		While GetKeyState("XButton1", "P")
-		{
-			Send {Space}
-			Send 1
+		While GetKeyState("XButton1", "P") {
+			SendInput {Space}
+			SendInput 1
 			Sleep, 25 ; repeat rate
 		}
 		return
 	~XButton2::
-		While GetKeyState("XButton2", "P")
-		{
-			Send f
-			Sleep, 150 ; repeat rate
-		}
-		return
-	~Space::
-		While GetKeyState("Space", "P")
-		{
-			Send {Space}
+		While GetKeyState("XButton2", "P") {
+			SendInput f
 			Sleep, 150 ; repeat rate
 		}
 		return
 	~E::
-		While GetKeyState("E", "P")
-		{
-			Send E
+		While GetKeyState("E", "P") {
+			SendInput E
 			Sleep, 150 ; repeat rate
 		}
 		return
@@ -175,84 +129,72 @@ Pause::LockDesktop()
 	    MouseMove, %xpos%, %ypos%, 0
 	    return
 	`::
+    CapsLock::
 		MouseGetPos, xpos, ypos
 	    MouseClick, left, 1201, 53, 1, 0
 	    MouseMove, %xpos%, %ypos%, 0
 	    return
 
+
 ; Genshin Impact
 #IfWinActive ahk_exe GenshinImpact.exe
 	~XButton1::
-		While GetKeyState("XButton1", "P")
-		{
-			Send {LButton}
+		While GetKeyState("XButton1", "P") {
+			SendInput {LButton}
 			Sleep, 150 ; repeat rate
 		}
 		return
 	~XButton2::
-		While GetKeyState("XButton2", "P")
-		{
-			Send f
+		While GetKeyState("XButton2", "P") {
+			SendInput f
 			Sleep, 50 ; repeat rate
 		}
 		return
 
-; Chrome
-#IfWinActive ahk_exe chrome.exe
-	XButton1::
+
+; Sublime Text
+#IfWinActive ahk_exe sublime_text.exe
+	!Right:: SendInput {F2}
+	!Left:: SendInput +{F2}
+
+
+; Web Browser
+#If WinActive("ahk_exe msedge.exe") or WinActive("ahk_exe chrome.exe")
+	XButton1:: SendInput ^{Tab}
+	XButton2:: 
 		WinGetTitle, active_title, A
-	 	if ((!!InStr(active_title, "pixiv")) = 1)
-	 		Send c
-		else
-			Send ^{Tab}
-		return
-	XButton2::
-		WinGetTitle, active_title, A
-	 	if ((!!InStr(active_title, "pixiv")) = 1){
-	 		Send b
+	 	if ((!!InStr(active_title, "pixiv")) == 1) {
+	 		SendInput b
 	 		Sleep 50
-	 		Send d
+	 		SendInput d
+	 	} 
+	 	else {
+			SendInput ^+{Tab}
 	 	}
-		else
-			Send ^+{Tab}
 		return
+	^Space:: SendInput ^+a
+ 
 
-
-
-
-
+; ------------------------------------------------------------------------------------------------
 ; Methods
+; ------------------------------------------------------------------------------------------------
 
-; Toggle Relay
-ToggleRelay(relayId) {
-	relay_ps := "./relay.py"
-	RunWait, python %relay_ps% %relayId%,,HIDE
-	return
-}
-ToggleMaximize() {
-	WinGet MX, MinMax, A
-	if (MX == 1)
-	    WinRestore A
-	else if (MX == 0)
-	    WinMaximize A
-	return
-}
-; Goto next window
-NextWindow() {
-	WinGetClass, ActiveClass, A
-	WinGet, Active, ID, A
-	WinGet, OpenWindowsAmount, Count, ahk_class %ActiveClass%
+ToggleWindowTitileBar() {
+	WinGet, currentStyle, Style, A
+    titleBarHidden := !(currentStyle & 0xC00000)
 
-	if (OpenWindowsAmount > 1) {
-		WinGetClass, WindowClass, A
-		WinGet, WindowsWithSameTitleList, List, ahk_class %WindowClass%
-
-		if (WindowsWithSameTitleList > 1) {
-			WinActivate, % "ahk_id " WindowsWithSameTitleList%WindowsWithSameTitleList%
-		}
+    ; MsgBox %currentStyle%
+	if (!titleBarHidden) {
+		WinSet, Style, -0xC00000, A
+		WinSet, Style, -0x840000, A
+	} 
+	else {	
+		WinSet, Style, +0xC00000, A
+		WinSet, Style, +0x840000, A
 	}
+	return
 }
-; Adjust screen brightness
+
 AdjustScreenBrightness(step) {
 	static service := "winmgmts:{impersonationLevel=impersonate}!\\.\root\WMI"
 	monitors := ComObjGet(service).ExecQuery("SELECT * FROM WmiMonitorBrightness WHERE Active=TRUE")
@@ -272,17 +214,17 @@ AdjustScreenBrightness(step) {
 	}
 	BrightnessOSD()
 }
-; Show brignhtness OSD
+
 BrightnessOSD() {
 	static PostMessagePtr := DllCall("GetProcAddress", "Ptr", DllCall("GetModuleHandle", "Str", "user32.dll", "Ptr"), "AStr", A_IsUnicode ? "PostMessageW" : "PostMessageA", "Ptr")
-	 ,WM_SHELLHOOK := DllCall("RegisterWindowMessage", "Str", "SHELLHOOK", "UInt")
+	static WM_SHELLHOOK := DllCall("RegisterWindowMessage", "Str", "SHELLHOOK", "UInt")
 	static FindWindow := DllCall("GetProcAddress", "Ptr", DllCall("GetModuleHandle", "Str", "user32.dll", "Ptr"), "AStr", A_IsUnicode ? "FindWindowW" : "FindWindowA", "Ptr")
+
 	HWND := DllCall(FindWindow, "Str", "NativeHWNDHost", "Str", "", "Ptr")
-	IF !(HWND) {
-		try IF ((shellProvider := ComObjCreate("{C2F03A33-21F5-47FA-B4BB-156362A2F239}", "{00000000-0000-0000-C000-000000000046}"))) {
-			try IF ((flyoutDisp := ComObjQuery(shellProvider, "{41f9d2fb-7834-4ab6-8b1b-73e74064b465}", "{41f9d2fb-7834-4ab6-8b1b-73e74064b465}"))) {
-				DllCall(NumGet(NumGet(flyoutDisp+0)+3*A_PtrSize), "Ptr", flyoutDisp, "Int", 0, "UInt", 0)
-				 ,ObjRelease(flyoutDisp)
+	if !(HWND) {
+		try if ((shellProvider := ComObjCreate("{C2F03A33-21F5-47FA-B4BB-156362A2F239}", "{00000000-0000-0000-C000-000000000046}"))) {
+			try if ((flyoutDisp := ComObjQuery(shellProvider, "{41f9d2fb-7834-4ab6-8b1b-73e74064b465}", "{41f9d2fb-7834-4ab6-8b1b-73e74064b465}"))) {
+				DllCall(NumGet(NumGet(flyoutDisp + 0) + 3 * A_PtrSize), "Ptr", flyoutDisp, "Int", 0, "UInt", 0), ObjRelease(flyoutDisp)
 			}
 			ObjRelease(shellProvider)
 		}
@@ -290,24 +232,27 @@ BrightnessOSD() {
 	}
 	DllCall(PostMessagePtr, "Ptr", HWND, "UInt", WM_SHELLHOOK, "Ptr", 0x37, "Ptr", 0)
 }
-; Send HTTP GET Request
-HttpGet(URL) {
-	static req := ComObjCreate("Msxml2.XMLHTTP")
-	req.open("GET", URL, false)
-	req.send()
-}
+
 Speak(speak) {
 	oSPVoice := ComObjCreate("SAPI.SpVoice")
 	oSpVoice.Rate := 2
 	oSPVoice.Speak(speak)
 }
+
 LockDesktop() {
 	DllCall("LockWorkStation")
 }
+
 OpenSoundMixer() {
 	SndVol.exe
 }
 
+OpenAlacrittyCommnand() {
+	config_file := "%APPDATA%\alacritty\command.toml"
+	working_dir := "C:/"
+	command := "cmd /k cls"
+	Run alacritty.exe --config-file %config_file% --working-directory %working_dir% --command %command%
+}
 
 
 ; Cheatsheet
